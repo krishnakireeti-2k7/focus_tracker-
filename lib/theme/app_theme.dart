@@ -4,12 +4,13 @@ class AppTheme {
   static ThemeData lightTheme = ThemeData(
     colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
     useMaterial3: true,
-    brightness: Brightness.light,
   );
 
   static ThemeData darkTheme = ThemeData(
-    colorScheme: ColorScheme.fromSeed(seedColor: Colors.blueGrey),
+    colorScheme: ColorScheme.fromSeed(
+      seedColor: Colors.blueGrey,
+      brightness: Brightness.dark,
+    ),
     useMaterial3: true,
-    brightness: Brightness.dark,
   );
 }
