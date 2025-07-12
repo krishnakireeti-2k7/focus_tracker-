@@ -1,30 +1,27 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:focus_tracker/providers/time_provider.dart';
 
-class FocusScreen extends StatefulWidget {
+class FocusScreen extends ConsumerStatefulWidget {
   const FocusScreen({super.key});
 
   @override
-  State<FocusScreen> createState() => _FocusScreenState();
+  ConsumerState<FocusScreen> createState() => _FocusScreenState();
 }
 
-class _FocusScreenState extends State<FocusScreen> {
+class _FocusScreenState extends ConsumerState<FocusScreen> {
   final TextEditingController _taskController = TextEditingController();
   bool _isFocusing = false;
-  Duration _elapsed = Duration.zero;
 
   @override
   Widget build(BuildContext context) {
+    final elapsed = ref.watch(focusTimerProvider);
     return Scaffold(
       appBar: AppBar(
         title: const Text('Focus Timer'),
         centerTitle: true,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.history),
-            onPressed: () {
-              // We'll add navigation later
-            },
-          ),
+          IconButton(icon: const Icon(Icons.history), onPressed: () {}),
         ],
       ),
       body: Padding(
@@ -46,13 +43,22 @@ class _FocusScreenState extends State<FocusScreen> {
             ),
             const SizedBox(height: 32),
             Text(
-              _formatDuration(_elapsed),
+              _formatDuration(elapsed),
               style: const TextStyle(fontSize: 48, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 32),
             ElevatedButton(
               onPressed: () {
-                // We'll add logic here later
+                setState(() {
+                  _isFocusing = !_isFocusing;
+                });
+
+                final timer = ref.read(focusTimerProvider.notifier);
+                if (_isFocusing) {
+                  timer.start();
+                } else {
+                  timer.stop();
+                }
               },
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(
