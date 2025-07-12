@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:focus_tracker/providers/session_provider.dart';
 import 'package:focus_tracker/providers/time_provider.dart';
+import '../models/focus_session.dart';
 
 class FocusScreen extends ConsumerStatefulWidget {
   const FocusScreen({super.key});
@@ -49,15 +51,34 @@ class _FocusScreenState extends ConsumerState<FocusScreen> {
             const SizedBox(height: 32),
             ElevatedButton(
               onPressed: () {
-                setState(() {
-                  _isFocusing = !_isFocusing;
-                });
-
                 final timer = ref.read(focusTimerProvider.notifier);
-                if (_isFocusing) {
-                  timer.start();
+                final elapsed = ref.read(focusTimerProvider);
+                final taskName = _taskController.text.trim();
+                if (!_isFocusing) {
+                  if (taskName.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text("Please enter task name")),
+                    );
+                    return;
+                  }
+                  setState(() => _isFocusing = true);
+                  timer.start;
                 } else {
-                  timer.stop();
+                  timer.stop;
+                  final session = FocusSession(
+                    task: taskName,
+                    seconds: elapsed.inSeconds,
+                    timestamps: DateTime.now(),
+                  );
+
+                  ref.read(sessionListProvider.notifier).addSession(session);
+                  ref.read(focusTimerProvider.notifier).reset();
+                  _taskController.clear();
+
+                  setState(() => _isFocusing = false);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text("Focus session saved")),
+                  );
                 }
               },
               style: ElevatedButton.styleFrom(
