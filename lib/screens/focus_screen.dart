@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:focus_tracker/providers/session_provider.dart';
+import 'package:focus_tracker/providers/session_list_notifier.dart';
 import 'package:focus_tracker/providers/time_provider.dart';
+import 'package:focus_tracker/screens/history_screen.dart';
 import '../models/focus_session.dart';
 
 class FocusScreen extends ConsumerStatefulWidget {
@@ -16,14 +17,31 @@ class _FocusScreenState extends ConsumerState<FocusScreen> {
   bool _isFocusing = false;
 
   @override
+  void initState() {
+    super.initState();
+    Future.microtask(() {
+      ref.read(sessionListProvider.notifier).loadSessions();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final elapsed = ref.watch(focusTimerProvider);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Focus Timer'),
         centerTitle: true,
         actions: [
-          IconButton(icon: const Icon(Icons.history), onPressed: () {}),
+          IconButton(
+            icon: const Icon(Icons.history),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => HistoryScreen()),
+              );
+            },
+          ),
         ],
       ),
       body: Padding(
@@ -50,34 +68,44 @@ class _FocusScreenState extends ConsumerState<FocusScreen> {
             ),
             const SizedBox(height: 32),
             ElevatedButton(
-              onPressed: () {
+              onPressed: () async {
                 final timer = ref.read(focusTimerProvider.notifier);
                 final elapsed = ref.read(focusTimerProvider);
                 final taskName = _taskController.text.trim();
+
                 if (!_isFocusing) {
                   if (taskName.isEmpty) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text("Please enter task name")),
+                      const SnackBar(content: Text("Please enter task name")),
                     );
                     return;
                   }
+
                   setState(() => _isFocusing = true);
-                  timer.start;
+                  timer.start();
                 } else {
-                  timer.stop;
+                  timer.stop();
+
                   final session = FocusSession(
                     task: taskName,
                     seconds: elapsed.inSeconds,
-                    timestamps: DateTime.now(),
+                    timestamp: DateTime.now(), // ✅ fixed
                   );
 
-                  ref.read(sessionListProvider.notifier).addSession(session);
+                  print(
+                    "🔄 Saving session: ${session.task}, ${session.seconds}s",
+                  );
+
+                  await ref
+                      .read(sessionListProvider.notifier)
+                      .addSession(session);
                   ref.read(focusTimerProvider.notifier).reset();
                   _taskController.clear();
 
                   setState(() => _isFocusing = false);
+
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text("Focus session saved")),
+                    const SnackBar(content: Text("Focus session saved")),
                   );
                 }
               },

@@ -5,11 +5,14 @@ import '../models/focus_session.dart';
 
 final sessionListProvider =
     StateNotifierProvider<SessionListNotifier, List<FocusSession>>((ref) {
-      return SessionListNotifier()..loadSessions();
+      return SessionListNotifier(); // no need for init call here
     });
 
 class SessionListNotifier extends StateNotifier<List<FocusSession>> {
-  SessionListNotifier() : super([]);
+  SessionListNotifier() : super([]) {
+    // 👇 this ensures sessions are loaded when provider is first created
+    Future.microtask(() => loadSessions());
+  }
 
   Future<void> addSession(FocusSession session) async {
     final prefs = await SharedPreferences.getInstance();
@@ -17,15 +20,24 @@ class SessionListNotifier extends StateNotifier<List<FocusSession>> {
     state = newList;
 
     final encoded = jsonEncode(newList.map((s) => s.toJson()).toList());
-    prefs.setString('sessions', encoded);
+    await prefs.setString('sessions', encoded);
+
+    print('✅ Sessions saved: $encoded');
   }
 
   Future<void> loadSessions() async {
+    print('📥 Trying to load saved sessions...');
     final prefs = await SharedPreferences.getInstance();
     final encoded = prefs.getString('sessions');
-    if (encoded == null) return;
+
+    if (encoded == null) {
+      print('⚠️ No saved sessions found.');
+      return;
+    }
 
     final decoded = jsonDecode(encoded) as List;
-    state = decoded.map((item) => FocusSession.fromJson(item)).toList();
+    final loaded = decoded.map((item) => FocusSession.fromJson(item)).toList();
+    state = loaded;
+    print('✅ Loaded ${loaded.length} sessions.');
   }
 }
