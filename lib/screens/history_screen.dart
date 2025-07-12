@@ -21,6 +21,9 @@ class HistoryScreen extends ConsumerWidget {
                   final FocusSession session = sessions[index];
 
                   return ListTile(
+                    key: ValueKey(
+                      session.timestamp.toIso8601String(),
+                    ), // ✅ UNIQUE KEY HERE
                     leading: const Icon(Icons.check_circle_outline),
                     title: Text(session.task),
                     subtitle: Text(

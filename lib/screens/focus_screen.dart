@@ -4,6 +4,7 @@ import 'package:focus_tracker/providers/session_list_notifier.dart';
 import 'package:focus_tracker/providers/time_provider.dart';
 import 'package:focus_tracker/screens/history_screen.dart';
 import '../models/focus_session.dart';
+import '../providers/theme_provider.dart';
 
 class FocusScreen extends ConsumerStatefulWidget {
   const FocusScreen({super.key});
@@ -23,35 +24,49 @@ class _FocusScreenState extends ConsumerState<FocusScreen> {
       ref.read(sessionListProvider.notifier).loadSessions();
     });
   }
-
+  @override
+  void dispose() {
+    _taskController.dispose(); 
+    super.dispose();
+  }
   @override
   Widget build(BuildContext context) {
     final elapsed = ref.watch(focusTimerProvider);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Focus Timer'),
+        title: const Text('Focus Tracker'),
         centerTitle: true,
         actions: [
+          Consumer(
+            builder: (context, ref, _) {
+              final mode = ref.watch(themeModeProvider);
+              final isDark = mode == ThemeMode.dark;
+              return IconButton(
+                icon: Icon(isDark ? Icons.light_mode : Icons.dark_mode),
+                onPressed: () {
+                  ref.read(themeModeProvider.notifier).toggleTheme();
+                },
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.history),
             onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => HistoryScreen()),
-              );
+              Navigator.pushNamed(context, '/history');
             },
           ),
         ],
       ),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text(
+            const SizedBox(height: 32),
+            Text(
               'What are you focusing on?',
-              style: TextStyle(fontSize: 18),
+              style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 12),
             TextField(
@@ -61,14 +76,20 @@ class _FocusScreenState extends ConsumerState<FocusScreen> {
                 border: OutlineInputBorder(),
               ),
             ),
-            const SizedBox(height: 32),
-            Text(
-              _formatDuration(elapsed),
-              style: const TextStyle(fontSize: 48, fontWeight: FontWeight.bold),
+            const SizedBox(height: 40),
+            Center(
+              child: Text(
+                _formatDuration(elapsed),
+                style: Theme.of(context).textTheme.displayMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ),
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: 40),
             ElevatedButton(
-              onPressed: () async {
+              key: UniqueKey(), // 💥 Force rebuild on every rebuild
+              onPressed: () {
                 final timer = ref.read(focusTimerProvider.notifier);
                 final elapsed = ref.read(focusTimerProvider);
                 final taskName = _taskController.text.trim();
@@ -76,11 +97,10 @@ class _FocusScreenState extends ConsumerState<FocusScreen> {
                 if (!_isFocusing) {
                   if (taskName.isEmpty) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("Please enter task name")),
+                      const SnackBar(content: Text("Please enter a task name")),
                     );
                     return;
                   }
-
                   setState(() => _isFocusing = true);
                   timer.start();
                 } else {
@@ -89,16 +109,10 @@ class _FocusScreenState extends ConsumerState<FocusScreen> {
                   final session = FocusSession(
                     task: taskName,
                     seconds: elapsed.inSeconds,
-                    timestamp: DateTime.now(), // ✅ fixed
+                    timestamp: DateTime.now(),
                   );
 
-                  print(
-                    "🔄 Saving session: ${session.task}, ${session.seconds}s",
-                  );
-
-                  await ref
-                      .read(sessionListProvider.notifier)
-                      .addSession(session);
+                  ref.read(sessionListProvider.notifier).addSession(session);
                   ref.read(focusTimerProvider.notifier).reset();
                   _taskController.clear();
 
@@ -110,9 +124,9 @@ class _FocusScreenState extends ConsumerState<FocusScreen> {
                 }
               },
               style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 40,
-                  vertical: 16,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
                 ),
               ),
               child: Text(
@@ -120,6 +134,7 @@ class _FocusScreenState extends ConsumerState<FocusScreen> {
                 style: const TextStyle(fontSize: 18),
               ),
             ),
+
           ],
         ),
       ),
