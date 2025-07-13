@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:focus_tracker/providers/session_list_notifier.dart';
 import 'package:focus_tracker/providers/time_provider.dart';
-import 'package:focus_tracker/screens/history_screen.dart';
 import '../models/focus_session.dart';
 import '../providers/theme_provider.dart';
 
@@ -35,29 +34,45 @@ class _FocusScreenState extends ConsumerState<FocusScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Focus Tracker'),
-        centerTitle: true,
-        actions: [
-          Consumer(
-            builder: (context, ref, _) {
-              final mode = ref.watch(themeModeProvider);
-              final isDark = mode == ThemeMode.dark;
-              return IconButton(
-                icon: Icon(isDark ? Icons.light_mode : Icons.dark_mode),
-                onPressed: () {
-                  ref.read(themeModeProvider.notifier).toggleTheme();
-                },
-              );
-            },
+    title: const Text('Focus Tracker'),
+    centerTitle: true,
+  ),
+      drawer: Drawer(
+    child: ListView(
+      padding: EdgeInsets.zero,
+      children: [
+        DrawerHeader(
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.primary,
           ),
-          IconButton(
-            icon: const Icon(Icons.history),
-            onPressed: () {
-              Navigator.pushNamed(context, '/history');
-            },
+          child: const Text(
+            'Menu',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 24,
+            ),
           ),
-        ],
-      ),
+        ),
+        ListTile(
+          leading: const Icon(Icons.history),
+          title: const Text('Focus History'),
+          onTap: () {
+            Navigator.pop(context); // close drawer
+            Navigator.pushNamed(context, '/history');
+          },
+        ),
+        ListTile(
+          leading: const Icon(Icons.color_lens),
+          title: const Text('Toggle Theme'),
+          onTap: () {
+            Navigator.pop(context); // close drawer
+            ref.read(themeModeProvider.notifier).toggleTheme();
+          },
+        ),
+        // You can add more items later like "Settings", "About", etc.
+      ],
+    ),
+  ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Column(
@@ -88,7 +103,7 @@ class _FocusScreenState extends ConsumerState<FocusScreen> {
             ),
             const SizedBox(height: 40),
             ElevatedButton(
-              key: UniqueKey(), // 💥 Force rebuild on every rebuild
+              key: UniqueKey(), 
               onPressed: () {
                 final timer = ref.read(focusTimerProvider.notifier);
                 final elapsed = ref.read(focusTimerProvider);
