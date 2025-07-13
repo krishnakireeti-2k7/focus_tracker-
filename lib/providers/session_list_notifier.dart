@@ -21,8 +21,6 @@ class SessionListNotifier extends StateNotifier<List<FocusSession>> {
 
     final encoded = jsonEncode(newList.map((s) => s.toJson()).toList());
     await prefs.setString('sessions', encoded);
-
-    print('✅ Sessions saved: $encoded');
   }
 
   Future<void> loadSessions() async {
@@ -38,6 +36,14 @@ class SessionListNotifier extends StateNotifier<List<FocusSession>> {
     final decoded = jsonDecode(encoded) as List;
     final loaded = decoded.map((item) => FocusSession.fromJson(item)).toList();
     state = loaded;
-    print('✅ Loaded ${loaded.length} sessions.');
   }
+  Future<void> deleteSession(int index) async {
+    final prefs = await SharedPreferences.getInstance();
+    final newList = [...state]..removeAt(index);
+    state = newList;
+
+    final encoded = jsonEncode(newList.map((s) => s.toJson()).toList());
+    await prefs.setString('sessions', encoded);
+  }
+
 }

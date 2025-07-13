@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:focus_tracker/providers/session_list_notifier.dart';
+import 'package:focus_tracker/widgets/session_tile.dart';
 import '../models/focus_session.dart';
 
 class HistoryScreen extends ConsumerWidget {
@@ -20,15 +21,16 @@ class HistoryScreen extends ConsumerWidget {
                 itemBuilder: (context, index) {
                   final FocusSession session = sessions[index];
 
-                  return ListTile(
-                    key: ValueKey(
-                      session.timestamp.toIso8601String(),
-                    ), // ✅ UNIQUE KEY HERE
-                    leading: const Icon(Icons.check_circle_outline),
-                    title: Text(session.task),
-                    subtitle: Text(
-                      '${_formatDuration(session.seconds)} • ${_formatDate(session.timestamp)}',
-                    ),
+                  return SessionTile(
+                    session: session,
+                    onDelete: () {
+                      ref
+                          .read(sessionListProvider.notifier)
+                          .deleteSession(index);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text("Session deleted")),
+                      );
+                    },
                   );
                 },
               ),
