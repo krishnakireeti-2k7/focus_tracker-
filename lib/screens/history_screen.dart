@@ -37,3 +37,27 @@ class HistoryScreen extends ConsumerWidget {
     );
   }
 }
+
+
+Map<String, List<FocusSession>> _groupSessionsByDate(
+  List<FocusSession> sessions,
+) {
+  Map<String, List<FocusSession>> grouped = {};
+
+  for (var session in sessions) {
+    final dateKey =
+        "${session.timestamp.day}/${session.timestamp.month}/${session.timestamp.year}";
+    grouped.putIfAbsent(dateKey, () => []).add(session);
+  }
+
+  // Sort by most recent day first
+  final sortedKeys =
+      grouped.keys.toList()..sort((a, b) {
+        final da = DateTime.parse(a.split('/').reversed.join('-'));
+        final db = DateTime.parse(b.split('/').reversed.join('-'));
+        return db.compareTo(da); // descending
+      });
+
+  // Rebuild sorted map
+  return {for (var k in sortedKeys) k: grouped[k]!};
+}
