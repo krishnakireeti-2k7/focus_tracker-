@@ -7,57 +7,92 @@ import '../models/focus_session.dart';
 class HistoryScreen extends ConsumerWidget {
   const HistoryScreen({super.key});
 
+  String _formatDateHeader(DateTime date) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final yesterday = today.subtract(const Duration(days: 1));
+
+    if (date == today) return 'Today';
+    if (date == yesterday) return 'Yesterday';
+    return '${date.day}/${date.month}/${date.year}';
+  }
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context,WidgetRef ref) {
     final sessions = ref.watch(sessionListProvider);
+    final groupedSessions = groupSessionsByDay(sessions);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Focus History')),
       body:
-          sessions.isEmpty
-              ? const Center(child: Text('No focus sessions yet.'))
-              : ListView.builder(
-                itemCount: sessions.length,
-                itemBuilder: (context, index) {
-                  final FocusSession session = sessions[index];
+          groupedSessions.isEmpty
+              ? const Center(child: Text('No sessions yet'))
+              : ListView(
+                children:
+                    groupedSessions.entries.map((entry) {
+                      final date = entry.key;
+                      final sessionsForDate = entry.value;
 
-                  return SessionTile(
-                    session: session,
-                    onDelete: () {
-                      ref
-                          .read(sessionListProvider.notifier)
-                          .deleteSession(index);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text("Session deleted")),
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+                            child: Text(
+                              _formatDateHeader(date),
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          ...sessionsForDate.map((session) {
+                            final globalIndex = sessions.indexOf(
+                              session,
+                            ); // important
+
+                            return SessionTile(
+                              session: session,
+                              onDelete: () {
+                                ref
+                                    .read(sessionListProvider.notifier)
+                                    .deleteSession(globalIndex);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text("Session deleted"),
+                                  ),
+                                );
+                              },
+                            );
+                          }).toList(),
+                        ],
                       );
-                    },
-                  );
-                },
+                    }).toList(),
               ),
     );
   }
 }
 
-
-Map<String, List<FocusSession>> _groupSessionsByDate(
+Map<DateTime, List<FocusSession>> groupSessionsByDay(
   List<FocusSession> sessions,
 ) {
-  Map<String, List<FocusSession>> grouped = {};
+  Map<DateTime, List<FocusSession>> grouped = {};
 
-  for (var session in sessions) {
-    final dateKey =
-        "${session.timestamp.day}/${session.timestamp.month}/${session.timestamp.year}";
-    grouped.putIfAbsent(dateKey, () => []).add(session);
+  for (final session in sessions) {
+    final date = DateTime(
+      session.timestamp.year,
+      session.timestamp.month,
+      session.timestamp.day,
+    );
+    grouped.putIfAbsent(date, () => []).add(session);
   }
 
-  // Sort by most recent day first
-  final sortedKeys =
-      grouped.keys.toList()..sort((a, b) {
-        final da = DateTime.parse(a.split('/').reversed.join('-'));
-        final db = DateTime.parse(b.split('/').reversed.join('-'));
-        return db.compareTo(da); // descending
-      });
+  // Optional: Sort sessions within each day (latest first)
+  for (final list in grouped.values) {
+    list.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+  }
 
-  // Rebuild sorted map
-  return {for (var k in sortedKeys) k: grouped[k]!};
+  // Sort days (latest first)
+  final sortedKeys = grouped.keys.toList()..sort((a, b) => b.compareTo(a));
+  return {for (var key in sortedKeys) key: grouped[key]!};
 }
