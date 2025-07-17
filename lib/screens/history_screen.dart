@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:focus_tracker/providers/session_list_notifier.dart';
+import 'package:focus_tracker/widgets/FloatingSnackBar';
 import 'package:focus_tracker/widgets/session_tile.dart';
 import '../models/focus_session.dart';
 
@@ -54,13 +55,25 @@ class HistoryScreen extends ConsumerWidget {
                             return SessionTile(
                               session: session,
                               onDelete: () {
+                                final deletedSession = session;
+                                final deletedIndex = globalIndex;
+
                                 ref
                                     .read(sessionListProvider.notifier)
-                                    .deleteSession(globalIndex);
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text("Session deleted"),
-                                  ),
+                                    .deleteSession(deletedIndex);
+
+                                FloatingSnackBar.show(
+                                  context,
+                                  message: "Session deleted",
+                                  actionLabel: "Undo",
+                                  onAction: () {
+                                    ref
+                                        .read(sessionListProvider.notifier)
+                                        .addSession(
+                                          deletedSession,
+                                          atIndex: deletedIndex,
+                                        );
+                                  },
                                 );
                               },
                             );
@@ -86,13 +99,9 @@ Map<DateTime, List<FocusSession>> groupSessionsByDay(
     );
     grouped.putIfAbsent(date, () => []).add(session);
   }
-
-  // Optional: Sort sessions within each day (latest first)
   for (final list in grouped.values) {
     list.sort((a, b) => b.timestamp.compareTo(a.timestamp));
   }
-
-  // Sort days (latest first)
   final sortedKeys = grouped.keys.toList()..sort((a, b) => b.compareTo(a));
   return {for (var key in sortedKeys) key: grouped[key]!};
 }

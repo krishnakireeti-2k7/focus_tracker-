@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:focus_tracker/providers/session_list_notifier.dart';
 import 'package:focus_tracker/providers/time_provider.dart';
+import 'package:focus_tracker/widgets/FloatingSnackBar.dart' as FloatingSnackBar;
 import '../models/focus_session.dart';
 import '../providers/theme_provider.dart';
 
@@ -111,9 +112,7 @@ class _FocusScreenState extends ConsumerState<FocusScreen> {
 
                 if (!_isFocusing) {
                   if (taskName.isEmpty) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("Please enter a task name")),
-                    );
+                    FloatingSnackBar.show(context, message: "Please enter the Session Name");
                     return;
                   }
                   setState(() => _isFocusing = true);
@@ -133,9 +132,13 @@ class _FocusScreenState extends ConsumerState<FocusScreen> {
 
                   setState(() => _isFocusing = false);
 
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text("Focus session saved")),
+                  FloatingSnackBar.show(
+                    context,
+                    message: "Session saved!",
+                    icon: Icons.check,
+                    iconColor: Colors.greenAccent,
                   );
+
                 }
               },
               style: ElevatedButton.styleFrom(
@@ -145,7 +148,7 @@ class _FocusScreenState extends ConsumerState<FocusScreen> {
                 ),
               ),
               child: Text(
-                _isFocusing ? 'Stop & Save' : 'Start Focusing',
+                _isFocusing ? 'Stop' : 'Start Focusing',
                 style: const TextStyle(fontSize: 18),
               ),
             ),

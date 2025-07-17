@@ -14,15 +14,15 @@ class SessionListNotifier extends StateNotifier<List<FocusSession>> {
     Future.microtask(() => loadSessions());
   }
 
-  Future<void> addSession(FocusSession session) async {
-    final prefs = await SharedPreferences.getInstance();
-    final newList = [...state, session];
-    state = newList;
-
-    final encoded = jsonEncode(newList.map((s) => s.toJson()).toList());
-    await prefs.setString('sessions', encoded);
+  void addSession(FocusSession session, {int? atIndex}) {
+    final updatedList = [...state];
+    if (atIndex != null && atIndex >= 0 && atIndex <= updatedList.length) {
+      updatedList.insert(atIndex, session);
+    } else {
+      updatedList.add(session);
+    }
+    state = updatedList;
   }
-
   Future<void> loadSessions() async {
     print('📥 Trying to load saved sessions...');
     final prefs = await SharedPreferences.getInstance();
@@ -37,6 +37,7 @@ class SessionListNotifier extends StateNotifier<List<FocusSession>> {
     final loaded = decoded.map((item) => FocusSession.fromJson(item)).toList();
     state = loaded;
   }
+
   Future<void> deleteSession(int index) async {
     final prefs = await SharedPreferences.getInstance();
     final newList = [...state]..removeAt(index);
@@ -45,5 +46,4 @@ class SessionListNotifier extends StateNotifier<List<FocusSession>> {
     final encoded = jsonEncode(newList.map((s) => s.toJson()).toList());
     await prefs.setString('sessions', encoded);
   }
-
 }
